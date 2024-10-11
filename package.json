@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "repository":{
     "type": "git",
-    "url": "https://github.com/yhlleo/yhl.git"
+    "url": "https://github.com/litt1esea/vsc-ext.git"
   },
   "engines": {
     "vscode": "^1.94.0"
