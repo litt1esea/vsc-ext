@@ -4,7 +4,7 @@ const dayjs = require('dayjs');
 const utils = require('./utils');
 const fs = require('fs');
 const path = require('path');
-
+const iconv = require('iconv-lite');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -36,11 +36,11 @@ function activate(context) {
 
 	// debug-pause
 	// debug-start
-	let isPaused = false;
+	let isPaused = context.globalState.get('isPaused', false);
 	const statusBar2 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 	statusBar2.text = '$(debug-start)';
 	statusBar2.command = 'txtReader.pause';
-	statusBar2.tooltip = '继续(Alt + 1)';
+	statusBar2.tooltip = '继续';
 	statusBar2.show();
 
 	const statusBar3 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -77,20 +77,29 @@ function activate(context) {
 
 	const config = vscode.workspace.getConfiguration();
 	const filePath = context.globalState.get('filePath', '');
-	const splitNumber = config.get('txtReader.splitNumber', 40);
 	const interval = config.get("txtReader.interval", 3000);
-	const encode = config.get("txtReader.encode", "utf-8");
+	// const encoding = context.globalState.get('encoding');
+	// config.update('txtReader.encoding', encoding);
 	
 	let contentArray = [];
-
+	
 	const openFile = () => {
+		const config = vscode.workspace.getConfiguration();
+		const splitNumber = config.get('txtReader.splitNumber', 40);
 		const filePath = context.globalState.get('filePath', '');
-		fs.readFile(path.resolve(filePath),{encoding: encode}, (err, data) => {
+		const encode = config.get("txtReader.encoding");			
+
+		fs.readFile(path.resolve(filePath),{encoding: 'binary'}, (err, data) => {
 			if (err) {
 				console.error(err);
 				return;
 			}
-			let content = data.toString().replace(/[\r\n\s+]/g, ' ');
+
+			var buf =  Buffer.from(data,'binary');
+			var txt = iconv.decode(buf, encode);
+
+			contentArray = [];
+			let content = txt.replace(/[\r\n\s+]/g, ' ');
 			let chunk = content.slice(0, splitNumber)
 			let rest = content.slice(splitNumber)
 	
@@ -100,8 +109,10 @@ function activate(context) {
 				rest = rest.slice(splitNumber)
 				contentArray.push(chunk)
 			}
-	
+			
+			// 更新内容
 			statusBarText.text = contentArray[pageIndex] ?? '[Empty]';
+			updatePercentage();
 		})
 	}
 
@@ -121,9 +132,10 @@ function activate(context) {
 
 	// 监听配置变化  
     vscode.workspace.onDidChangeConfiguration(event => {  
-        if (event.affectsConfiguration('txtReader.encode')) {  
-            const newSetting = config.get('txtReader.encode');  
-            console.log(`My Extension Setting Changed: ${newSetting}`);  
+		const config = vscode.workspace.getConfiguration();
+        if (event.affectsConfiguration('txtReader.encoding')) {  
+			const newSetting = config.get('txtReader.encoding');
+            console.log(`My Extension Setting Changed: ${newSetting}`);
 			openFile();
         }
     });  
@@ -166,46 +178,45 @@ function activate(context) {
 
 
 	const disposable2 = vscode.commands.registerCommand('txtReader.prev', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		// vscode.window.showInformationMessage('上一页');
+		let visible = context.globalState.get('visible');
+		if (!visible) {
+			return
+		}
+		
 		if (pageIndex === 0) {
 			return
 		}
 		pageIndex--;
-		// const percentage = (((pageIndex + 1) / contentArray.length) * 100).toFixed(2);
 		context.globalState.update('pageIndex', pageIndex);
 		statusBarText.text = contentArray[pageIndex];
-		// statusBar4.text = `【${percentage}%】`;
 		updatePercentage();
 		updateStatusBarTextTooltip();
 	});
 
 	const disposable3 = vscode.commands.registerCommand('txtReader.pause', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
 		if (isPaused) {
 			statusBar2.text = '$(debug-start)';
-			statusBar2.tooltip = '继续(Alt + 1)';
+			statusBar2.tooltip = '继续';
 			isPaused = false;
 			clearInterval(timer);
 		} else {
 			statusBar2.text = '$(debug-pause)';
-			statusBar2.tooltip = '暂停(Alt + 1)';
+			statusBar2.tooltip = '暂停';
 			isPaused = true;
 			timer = setInterval(() => {
 				vscode.commands.executeCommand('txtReader.next');
 			}, interval);
 		}
+
+		context.globalState.update('isPaused', isPaused);
 	});
 
 	const disposable4 = vscode.commands.registerCommand('txtReader.next', function () {
-		// The code you place here will be executed every time your command is executed
+		let visible = context.globalState.get('visible');
+		if (!visible) {
+			return
+		}
 
-		// Display a message box to the user
-		// vscode.window.showInformationMessage('下一页');
 		if (pageIndex === contentArray.length - 1) {
 			return
 		}
@@ -245,10 +256,8 @@ function activate(context) {
 
 }
 
-// This method is called when your extension is deactivated
 function deactivate() {
 	console.log('txtReader extension is now deactivated');
-	// clearInterval(t)
 }
 
 module.exports = {

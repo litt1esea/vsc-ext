@@ -8,7 +8,7 @@
     "url": "https://github.com/litt1esea/vsc-ext.git"
   },
   "engines": {
-    "vscode": "^1.94.0"
+    "vscode": "^1.79.0"
   },
   "categories": [
     "Other"
@@ -29,7 +29,7 @@
     "configuration": {
       "type": "object",
       "title": "TxtReader Configuration",
-      "properties": {        
+      "properties": {
         "txtReader.encoding": {
           "type": "string",
           "default": "utf8",
@@ -80,12 +80,13 @@
   "devDependencies": {
     "@types/mocha": "^10.0.8",
     "@types/node": "20.x",
-    "@types/vscode": "^1.94.0",
+    "@types/vscode": "^1.79.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.11.1"
   },
   "dependencies": {
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "iconv-lite": "^0.6.3"
   }
 }
