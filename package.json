@@ -1,9 +1,9 @@
 {
-  "name": "yhl",
-  "displayName": "yhl",
+  "name": "txt-reader",
+  "displayName": "txtReader",
   "description": "",
   "version": "0.0.1",
-  "repository":{
+  "repository": {
     "type": "git",
     "url": "https://github.com/litt1esea/vsc-ext.git"
   },
@@ -13,15 +13,62 @@
   "categories": [
     "Other"
   ],
+  "icon": "images/icon.png",
   "activationEvents": [
     "*"
   ],
+  "publisher": "yhl",
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "yhl.helloWorld",
+        "command": "txtReader.helloWorld",
         "title": "Hello World"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "TxtReader Configuration",
+      "properties": {        
+        "txtReader.encoding": {
+          "type": "string",
+          "default": "utf8",
+          "enum": [
+            "utf8",
+            "gbk",
+            "gb2312"
+          ],
+          "description": "文件编码"
+        },
+        "txtReader.splitNumber": {
+          "type": "number",
+          "default": 40,
+          "description": "最大显示字数"
+        },
+        "txtReader.interval": {
+          "type": "number",
+          "default": 3000,
+          "description": "自动播放的时间间隔"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "txtReader.next",
+        "key": "alt+2",
+        "mac": "cmd+2",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "txtReader.prev",
+        "key": "alt+3",
+        "mac": "cmd+3",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "txtReader.toggleDisplay",
+        "key": "alt+1",
+        "mac": "cmd+1"
       }
     ]
   },

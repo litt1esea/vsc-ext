@@ -1,13 +1,9 @@
-// The module 'vscode' contains the VS Code extensibility API
-
-// Import the module and reference it with the alias vscode in your code below
+// @ts-check
 const vscode = require('vscode');
 const dayjs = require('dayjs');
 const utils = require('./utils');
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-
-let t = null
+const fs = require('fs');
+const path = require('path');
 
 
 /**
@@ -17,43 +13,242 @@ function activate(context) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "yhl" is now active!');
+	console.log('Congratulations, your extension "txtReader" is now active!');
 
-	const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-	statusBar.text = '$(watch) 编辑器打开时长: 00:00:00';
-	statusBar.show();
+	let pageIndex = context.globalState.get('pageIndex', 0);
+	console.log('pageIndex', pageIndex);
+	console.log('keys', context.globalState.keys());
 
 
-	const startTime = Date.now();
+	const statusBar0 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+	statusBar0.text = '$(open-preview)';
+	statusBar0.command = 'txtReader.openFile';
+	statusBar0.tooltip = '打开电子书(txt)';
+	statusBar0.show();
 
-	t = setInterval(() => {
-		const nowTime = Date.now();
-		// 毫秒转化为时分秒
-		const { hours, minutes, seconds} = utils.formatMilliseconds(nowTime - startTime)
 
-		statusBar.text = `$(watch) 编辑器打开时长: ${ hours}:${ minutes}:${ seconds}`;
+	const statusBar1 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+	statusBar1.text = '$(chevron-left)';
+	statusBar1.command = 'txtReader.prev';
+	statusBar1.tooltip = '上一页(Alt + 3)';
+	statusBar1.show();
 
-	}, 1000)
 
+	// debug-pause
+	// debug-start
+	let isPaused = false;
+	const statusBar2 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+	statusBar2.text = '$(debug-start)';
+	statusBar2.command = 'txtReader.pause';
+	statusBar2.tooltip = '继续(Alt + 1)';
+	statusBar2.show();
+
+	const statusBar3 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+	statusBar3.text = '$(chevron-right)';
+	statusBar3.command = 'txtReader.next';
+	statusBar3.tooltip = '下一页(Alt + 2)';
+	statusBar3.show();
+
+
+	const statusBar4 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+	statusBar4.text = '【0.00%】';
+	statusBar4.show();
+	// statusBar4.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+
+
+	const statusBarText = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+
+	statusBarText.show();
+
+
+	const updateStatusBarTextTooltip = () => {
+		// const tooltip = `当前页：${pageIndex + 1}/${contentArray.length}`;
+		const filePath = context.globalState.get('filePath', '');
+		statusBarText.tooltip = filePath;
+	}
+
+
+
+	const statusBars = [statusBar0, statusBar1, statusBar2, statusBar3, statusBar4, statusBarText];
+
+
+	let timer;
+
+
+	const config = vscode.workspace.getConfiguration();
+	const filePath = context.globalState.get('filePath', '');
+	const splitNumber = config.get('txtReader.splitNumber', 40);
+	const interval = config.get("txtReader.interval", 3000);
+	const encode = config.get("txtReader.encode", "utf-8");
+	
+	let contentArray = [];
+
+	const openFile = () => {
+		const filePath = context.globalState.get('filePath', '');
+		fs.readFile(path.resolve(filePath),{encoding: encode}, (err, data) => {
+			if (err) {
+				console.error(err);
+				return;
+			}
+			let content = data.toString().replace(/[\r\n\s+]/g, ' ');
+			let chunk = content.slice(0, splitNumber)
+			let rest = content.slice(splitNumber)
+	
+			contentArray.push(chunk)
+			while (rest.length > 0) {
+				chunk = rest.slice(0, splitNumber)
+				rest = rest.slice(splitNumber)
+				contentArray.push(chunk)
+			}
+	
+			statusBarText.text = contentArray[pageIndex] ?? '[Empty]';
+		})
+	}
+
+	if (filePath) {
+		openFile();
+	}
+
+	
+
+
+	const updatePercentage = () => {
+		const percentage = (((pageIndex + 1) / contentArray.length) * 100).toFixed(2);
+		statusBar4.text = `【${percentage}%】(${pageIndex}/${contentArray.length})`;
+	}
+
+
+
+	// 监听配置变化  
+    vscode.workspace.onDidChangeConfiguration(event => {  
+        if (event.affectsConfiguration('txtReader.encode')) {  
+            const newSetting = config.get('txtReader.encode');  
+            console.log(`My Extension Setting Changed: ${newSetting}`);  
+			openFile();
+        }
+    });  
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('yhl.helloWorld', function () {
+	const disposable = vscode.commands.registerCommand('txtReader.openFile', async function () {
+
+		const uri = await vscode.window.showOpenDialog({  
+			canSelectFiles: true,  
+			canSelectFolders: false,  
+			canSelectMany: false, // 设置为true以允许多选  
+			openLabel: 'Select', // 自定义按钮标签  
+			filters: { // 可选的文件类型过滤器  
+				'Text Files': ['txt', 'md']  
+			}
+		});
+
+		if (!uri) {  
+			// 用户取消选择  
+			return;  
+		}  
+
+		// 获取选择的文件路径（第一个元素，因为我们设置了canSelectMany: false）  
+		const filePath = uri[0].fsPath;  
+
+		// 在此处处理文件路径，例如打开文件、读取内容等  
+		console.log('Selected file: ' + filePath);  
+
+		context.globalState.update('filePath', filePath);
+
+		// 重新打开文件
+		contentArray = [];
+		pageIndex = 0;
+		context.globalState.update('pageIndex', pageIndex);
+		openFile();
+		updateStatusBarTextTooltip();
+	});
+
+
+	const disposable2 = vscode.commands.registerCommand('txtReader.prev', function () {
 		// The code you place here will be executed every time your command is executed
 
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from yhl');
-
+		// vscode.window.showInformationMessage('上一页');
+		if (pageIndex === 0) {
+			return
+		}
+		pageIndex--;
+		// const percentage = (((pageIndex + 1) / contentArray.length) * 100).toFixed(2);
+		context.globalState.update('pageIndex', pageIndex);
+		statusBarText.text = contentArray[pageIndex];
+		// statusBar4.text = `【${percentage}%】`;
+		updatePercentage();
+		updateStatusBarTextTooltip();
 	});
 
-	context.subscriptions.push(disposable);
+	const disposable3 = vscode.commands.registerCommand('txtReader.pause', function () {
+		// The code you place here will be executed every time your command is executed
+
+		// Display a message box to the user
+		if (isPaused) {
+			statusBar2.text = '$(debug-start)';
+			statusBar2.tooltip = '继续(Alt + 1)';
+			isPaused = false;
+			clearInterval(timer);
+		} else {
+			statusBar2.text = '$(debug-pause)';
+			statusBar2.tooltip = '暂停(Alt + 1)';
+			isPaused = true;
+			timer = setInterval(() => {
+				vscode.commands.executeCommand('txtReader.next');
+			}, interval);
+		}
+	});
+
+	const disposable4 = vscode.commands.registerCommand('txtReader.next', function () {
+		// The code you place here will be executed every time your command is executed
+
+		// Display a message box to the user
+		// vscode.window.showInformationMessage('下一页');
+		if (pageIndex === contentArray.length - 1) {
+			return
+		}
+		pageIndex++;
+		context.globalState.update('pageIndex', pageIndex);
+		statusBarText.text = contentArray[pageIndex];
+		updatePercentage();
+		updateStatusBarTextTooltip();
+	});
+	const disposable5 = vscode.commands.registerCommand('txtReader.show', function () {
+		statusBars.forEach(statusBar => {
+			statusBar.show();
+		});
+	});
+
+	const disposable6 = vscode.commands.registerCommand('txtReader.hide', function () {
+		statusBars.forEach(statusBar => {
+			statusBar.hide();
+		});
+	});
+
+
+	let visible = context.globalState.get('visible', true);
+	const disposable7 = vscode.commands.registerCommand('txtReader.toggleDisplay', function () {
+		if (visible) {
+			vscode.commands.executeCommand('txtReader.hide');
+			visible = false;
+		} else {
+			vscode.commands.executeCommand('txtReader.show');
+			visible = true;
+		}
+		context.globalState.update('visible', visible);
+	});
+
+
+	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5, disposable6, disposable7);
+
 }
 
 // This method is called when your extension is deactivated
 function deactivate() {
-	console.log('yhl extension is now deactivated');
-	clearInterval(t)
+	console.log('txtReader extension is now deactivated');
+	// clearInterval(t)
 }
 
 module.exports = {
