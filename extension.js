@@ -82,36 +82,36 @@ function activate(context) {
 	const interval = config.get("txtReader.interval", 3000);
 	// const encoding = context.globalState.get('encoding');
 	// config.update('txtReader.encoding', encoding);
-	
+
 	let contentArray = [];
-	
+
 	const openFile = () => {
 		const config = vscode.workspace.getConfiguration();
 		const splitNumber = config.get('txtReader.splitNumber', 40);
 		const filePath = context.globalState.get('filePath', '');
-		const encode = config.get("txtReader.encoding");			
+		const encode = config.get("txtReader.encoding");
 
-		fs.readFile(path.resolve(filePath),{encoding: 'binary'}, (err, data) => {
+		fs.readFile(path.resolve(filePath), { encoding: 'binary' }, (err, data) => {
 			if (err) {
 				console.error(err);
 				return;
 			}
 
-			var buf =  Buffer.from(data,'binary');
+			var buf = Buffer.from(data, 'binary');
 			var txt = iconv.decode(buf, encode);
 
 			contentArray = [];
 			let content = txt.replace(/[\r\n\s+]/g, ' ');
 			let chunk = content.slice(0, splitNumber)
 			let rest = content.slice(splitNumber)
-	
+
 			contentArray.push(chunk)
 			while (rest.length > 0) {
 				chunk = rest.slice(0, splitNumber)
 				rest = rest.slice(splitNumber)
 				contentArray.push(chunk)
 			}
-			
+
 			// 更新内容
 			statusBarText.text = contentArray[pageIndex] ?? '[Empty]';
 			updatePercentage();
@@ -122,18 +122,18 @@ function activate(context) {
 		openFile();
 	}
 
-	
+
 
 
 	const updatePercentage = () => {
-		const percentage = (((pageIndex + 1) / (contentArray.length-1)) * 100).toFixed(2);
-		statusBar4.text = `【${percentage}%】(${pageIndex}/${contentArray.length-1})`;
+		const percentage = (((pageIndex + 1) / (contentArray.length - 1)) * 100).toFixed(2);
+		statusBar4.text = `【${percentage}%】(${pageIndex}/${contentArray.length - 1})`;
 	}
 
 
 	const gotoPage = (page) => {
 		page = parseInt(page);
-		if (Number.isNaN(page) || page < 0 || page > contentArray.length-1) {
+		if (Number.isNaN(page) || page < 0 || page > (contentArray.length - 1)) {
 			vscode.window.showErrorMessage(`请输入正确的页码`);
 			return
 		}
@@ -151,46 +151,49 @@ function activate(context) {
 			value: String(pageIndex),
 			valueSelection: [0, pageIndex.toString().length]
 		})
-		gotoPage(p);
+
+		if (p !== undefined) {
+			gotoPage(p)
+		}
 	});
 
 
 
 	// 监听配置变化  
-    vscode.workspace.onDidChangeConfiguration(event => {  
+	vscode.workspace.onDidChangeConfiguration(event => {
 		const config = vscode.workspace.getConfiguration();
-        if (event.affectsConfiguration('txtReader.encoding')) {  
+		if (event.affectsConfiguration('txtReader.encoding')) {
 			const newSetting = config.get('txtReader.encoding');
-            console.log(`My Extension Setting Changed: ${newSetting}`);
+			console.log(`My Extension Setting Changed: ${newSetting}`);
 			openFile();
-        }
-    });  
+		}
+	});
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	const disposable = vscode.commands.registerCommand('txtReader.openFile', async function () {
 
-		const uri = await vscode.window.showOpenDialog({  
-			canSelectFiles: true,  
-			canSelectFolders: false,  
+		const uri = await vscode.window.showOpenDialog({
+			canSelectFiles: true,
+			canSelectFolders: false,
 			canSelectMany: false, // 设置为true以允许多选  
 			openLabel: 'Select', // 自定义按钮标签  
 			filters: { // 可选的文件类型过滤器  
-				'Text Files': ['txt', 'md']  
+				'Text Files': ['txt', 'md']
 			}
 		});
 
-		if (!uri) {  
+		if (!uri) {
 			// 用户取消选择  
-			return;  
-		}  
+			return;
+		}
 
 		// 获取选择的文件路径（第一个元素，因为我们设置了canSelectMany: false）  
-		const filePath = uri[0].fsPath;  
+		const filePath = uri[0].fsPath;
 
 		// 在此处处理文件路径，例如打开文件、读取内容等  
-		console.log('Selected file: ' + filePath);  
+		console.log('Selected file: ' + filePath);
 
 		context.globalState.update('filePath', filePath);
 
@@ -208,7 +211,7 @@ function activate(context) {
 		if (!visible) {
 			return
 		}
-		
+
 		if (pageIndex === 0) {
 			return
 		}
