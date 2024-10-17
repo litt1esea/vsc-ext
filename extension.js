@@ -52,6 +52,8 @@ function activate(context) {
 
 	const statusBar4 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 	statusBar4.text = '【0.00%】';
+	statusBar4.tooltip = '当前页/总页数';
+	statusBar4.command = 'txtReader.gotoPageByInput';
 	statusBar4.show();
 	// statusBar4.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 
@@ -124,9 +126,33 @@ function activate(context) {
 
 
 	const updatePercentage = () => {
-		const percentage = (((pageIndex + 1) / contentArray.length) * 100).toFixed(2);
-		statusBar4.text = `【${percentage}%】(${pageIndex}/${contentArray.length})`;
+		const percentage = (((pageIndex + 1) / (contentArray.length-1)) * 100).toFixed(2);
+		statusBar4.text = `【${percentage}%】(${pageIndex}/${contentArray.length-1})`;
 	}
+
+
+	const gotoPage = (page) => {
+		page = parseInt(page);
+		if (Number.isNaN(page) || page < 0 || page > contentArray.length-1) {
+			vscode.window.showErrorMessage(`请输入正确的页码`);
+			return
+		}
+		pageIndex = page;
+		context.globalState.update('pageIndex', pageIndex);
+		statusBarText.text = contentArray[pageIndex];
+		updatePercentage();
+	}
+
+
+
+	const disposable8 = vscode.commands.registerCommand('txtReader.gotoPageByInput', async function () {
+		const p = await vscode.window.showInputBox({
+			prompt: '请输入页码',
+			value: String(pageIndex),
+			valueSelection: [0, pageIndex.toString().length]
+		})
+		gotoPage(p);
+	});
 
 
 
@@ -252,7 +278,7 @@ function activate(context) {
 	});
 
 
-	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5, disposable6, disposable7);
+	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5, disposable6, disposable7, disposable8);
 
 }
 
