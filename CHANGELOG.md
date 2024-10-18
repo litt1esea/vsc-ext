@@ -1,9 +1,5 @@
 # Change Log
-
-All notable changes to the "yhl" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+## [0.0.2] - 2024-10-18
+### Added
+- 新增输入页码跳转功能
+- 新增复制当前页码功能
