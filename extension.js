@@ -59,7 +59,7 @@ function activate(context) {
 
 
 	const statusBarText = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-
+	statusBarText.command = 'txtReader.copyToClipboard';
 	statusBarText.show();
 
 
@@ -115,6 +115,7 @@ function activate(context) {
 			// 更新内容
 			statusBarText.text = contentArray[pageIndex] ?? '[Empty]';
 			updatePercentage();
+			updateStatusBarTextTooltip();
 		})
 	}
 
@@ -155,6 +156,19 @@ function activate(context) {
 		if (p !== undefined) {
 			gotoPage(p)
 		}
+	});
+
+	// 复制当前页内容到剪贴板
+	const disposable9 = vscode.commands.registerCommand('txtReader.copyToClipboard', async function () {
+		
+		const content = contentArray[pageIndex];
+		if (content === undefined) {
+			return;
+		}
+
+		await vscode.env.clipboard.writeText(content);
+		vscode.window.showInformationMessage('已复制到剪贴板');
+
 	});
 
 
@@ -281,7 +295,7 @@ function activate(context) {
 	});
 
 
-	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5, disposable6, disposable7, disposable8);
+	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5, disposable6, disposable7, disposable8, disposable9);
 
 }
 
