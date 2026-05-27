@@ -1,6 +1,6 @@
 {
-  "name": "txt-reader",
-  "displayName": "txtReader",
+  "name": "statusbar-txt-reader",
+  "displayName": "TextReader",
   "description": "",
   "version": "0.0.2",
   "repository": {
@@ -84,6 +84,7 @@
     "@types/vscode": "^1.79.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.9.1",
     "eslint": "^9.11.1",
     "vsce": "^2.15.0"
   },
